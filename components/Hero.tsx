@@ -2,11 +2,10 @@
 import { Fragment, useState } from "react";
 import { Card } from "./ui/card";
 import Image from "next/image";
-import { mockvideos } from "@/mock/videos";
-import { Skeleton } from "./ui/skeleton";
 import { BookmarkCheck, BookmarkPlus, CirclePlay } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "./ui/badge";
+import NoResultsPlaceholder from "./noCategory";
 
 type Video = {
   videoId: string;
@@ -19,98 +18,96 @@ type Video = {
   url: string;
 };
 
-const mockVideos: Video[] = mockvideos.map((v) => ({
-  videoId: v.$id,
-  title: v.title,
-  channelTitle: v.author,
-  thumbnail: v.imageurl,
-  publishedAt: v["date-published"] ?? "",
-  category: v.category,
-  tags: v.tags,
-  url: v.youtubelink,
-}));
+type HeroProps = {
+  videos: Video[];
+};
 
-const Hero = () => {
-  const [videos] = useState<Video[]>(mockVideos);
+const Hero = ({ videos }: HeroProps) => {
   const [bookmarkedItems, setBookmarkedItems] = useState<Record<string, boolean>>({});
+
+  const toggleBookmark = (videoId: string) => {
+    setBookmarkedItems(prev => ({
+      ...prev,
+      [videoId]: !prev[videoId],
+    }));
+  };
 
   return (
     <Fragment>
-      <div className="mt-20 mb-10 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 place-items-center max-w-[100%]">
-        {videos.length === 0 ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex flex-col space-y-3">
-              <Skeleton className="h-[125px] w-[250px] rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-[250px]" />
-                <Skeleton className="h-4 w-[200px]" />
-              </div>
-            </div>
-          ))
-        ) : (
-          videos.map((video) => (
-            <Card
-              className="w-[90vw] max-w-[600px] h-[320px] md:w-[45vw] lg:w-[32vw] flex flex-col items-center justify-start gap-4 p-4 shadow-md"
-              key={video.videoId}
-            >
-              <div className="relative w-full aspect-video overflow-hidden rounded-2xl bg-gray-700">
-                <Image
-                  loading="lazy"
-                  src={video.thumbnail}
-                  alt={video.title}
-                  fill
-                  className="object-cover rounded-2xl"
-                  unoptimized
-                />
-              </div>
+      <div>
+        <div className="mt-20 mb-10 w-[100vw] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center max-w-[100%] px-4">
+          {videos.length === 0 ? (
+              <NoResultsPlaceholder />
+          ) : (
+            videos.map((video) => (
+              <Card
+                className="w-[90vw] max-w-[600px] h-[380px] md:w-[45vw] lg:w-[32vw] flex flex-col items-center justify-start gap-4 p-4 shadow-lg rounded-xl"
+                key={video.videoId}
+              >
+                <div className="w-full h-[200px] overflow-hidden rounded-xl bg-black">
+                  <Image
+                    loading={video === videos[0] ? "eager" : "lazy"}
+                    priority={video === videos[0]}
+                    fetchPriority="high"
+                    src={`${video.thumbnail}?tr=w-356,h-200,f-webp`}
+                    alt={video.title}
+                    width={356}
+                    height={200}
+                    decoding="async"
+                    aria-label={`Watch ${video.title}`}
+                    className="w-full h-full object-cover rounded-xl"
+                    sizes="(max-width: 768px) 90vw, (max-width: 1024px) 45vw, 32vw"
+                  />
+                </div>
 
-              <div className="text-start w-full">
-                <h3 className="text-lg font-semibold line-clamp-2 px-2">{video.title}</h3>
-                <div className="flex justify-between px-2 py-3">
-                  <p className="text-md text-muted-foreground line-clamp-1 pt-1">{video.channelTitle}</p>
-                  <div className="flex gap-3">
-                    {bookmarkedItems[video.videoId] ? (
-                      <BookmarkCheck
-                        strokeWidth={1}
-                        size={22}
-                        className="cursor-pointer"
-                        onClick={() =>
-                          setBookmarkedItems((prev) => ({
-                            ...prev,
-                            [video.videoId]: false,
-                          }))
-                        }
-                      />
-                    ) : (
-                      <BookmarkPlus
-                        strokeWidth={1}
-                        size={22}
-                        className="cursor-pointer"
-                        onClick={() =>
-                          setBookmarkedItems((prev) => ({
-                            ...prev,
-                            [video.videoId]: true,
-                          }))
-                        }
-                      />
-                    )}
-                    <Link href={video.url} target="_blank">
-                      <CirclePlay strokeWidth={1.2} size={22 } />
-                    </Link>
+                <div className="text-start w-full p-4">
+                  <h3 className="text-xl font-semibold line-clamp-2">{video.title}</h3>
+                  <p className="text-sm from-accent-foreground line-clamp-1 pt-2">{video.channelTitle}</p>
+                  <div className="flex justify-between items-center pt-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {video.tags.slice(0, 3).map((item, i) => (
+                        <Badge
+                          key={i}
+                          variant="secondary"
+                          className="cursor-pointer"
+                        >
+                          {item}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-3 items-center ml-1">
+                      {bookmarkedItems[video.videoId] ? (
+                        <BookmarkCheck
+                          strokeWidth={1.5}
+                          size={24}
+                          className="cursor-pointe"
+                          onClick={() => toggleBookmark(video.videoId)}
+                        />
+                      )
+
+                        : (
+                          <BookmarkPlus
+                            strokeWidth={1.5}
+                            size={24}
+                            className="cursor-pointer"
+                            onClick={() => toggleBookmark(video.videoId)}
+                          />
+                        )
+                      }
+                      <Link href={video.url} aria-label={`Watch ${video.title} on YouTube`} target="_blank" rel="noopener noreferrer">
+                        <CirclePlay
+                          strokeWidth={1.5}
+                          size={24}
+
+                        />
+                      </Link>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2 px-2 flex-wrap">
-                  {video.tags.map((item, i) => {
-                    if (i === 3) return;
-                    return (
-                      <Badge key={i} variant="secondary" className="cursor-pointer">{item}</Badge>
-                    )
-                  })}
-                </div>
-              </div>
-            </Card>
-          ))
-        )}
+              </Card>
+            ))
+          )}
+        </div>
       </div>
     </Fragment>
   );
